@@ -39,26 +39,40 @@ rolledDie =
     Random.map (\faceVal -> Die faceVal) (Random.int 1 6)
 
 
-toSvg : Die -> Html.Html msg
-toSvg die =
+toSvg : Int -> Die -> Html.Html msg
+toSvg size die =
+    -- Will not allow dice size to be less than 20 pixels (24 with margin)
+    let
+        boundedSize =
+            max size 20
+
+        margin =
+            boundedSize // 10
+
+        boxSize =
+            String.fromInt (boundedSize + 2 * margin)
+
+        strokeWidth =
+            String.fromInt (max (boundedSize // 30) 1)
+    in
     Svg.svg
-        [ SA.width "120"
-        , SA.height "120"
-        , SA.viewBox "0 0 120 120"
+        [ SA.width boxSize
+        , SA.height boxSize
+        , SA.viewBox ("0 0 " ++ boxSize ++ " " ++ boxSize)
         ]
         (List.append
             [ Svg.rect
-                [ SA.x "10"
-                , SA.y "10"
-                , SA.width "100"
-                , SA.height "100"
+                [ SA.x (String.fromInt margin)
+                , SA.y (String.fromInt margin)
+                , SA.width (String.fromInt boundedSize)
+                , SA.height (String.fromInt boundedSize)
                 , SA.fill "white"
                 , SA.stroke "black"
-                , SA.strokeWidth "3"
+                , SA.strokeWidth strokeWidth
                 ]
                 []
             ]
-            (pips (asInt die))
+            (pips (asInt die) boundedSize)
         )
 
 
@@ -73,26 +87,40 @@ pipLocations =
     ]
 
 
-dieCoordinates : ( Int, Int ) -> ( Int, Int )
-dieCoordinates location =
-    ( Tuple.first location * 25 + 35, Tuple.second location * 25 + 35 )
+dieCoordinates : Int -> ( Int, Int ) -> ( Int, Int )
+dieCoordinates size location =
+    let
+        quarter =
+            size // 4
+
+        margin =
+            size // 10
+
+        offset =
+            quarter + margin
+    in
+    ( Tuple.first location * quarter + offset, Tuple.second location * quarter + offset )
 
 
-pip : ( Int, Int ) -> Svg.Svg msg
-pip coord =
+pip : Int -> ( Int, Int ) -> Svg.Svg msg
+pip r coord =
     Svg.circle
         [ SA.cx (String.fromInt (Tuple.first coord))
         , SA.cy (String.fromInt (Tuple.second coord))
-        , SA.r "5"
+        , SA.r (String.fromInt r)
         ]
         []
 
 
-pips : Int -> List (Svg.Svg msg)
-pips value =
+pips : Int -> Int -> List (Svg.Svg msg)
+pips value size =
+    let
+        pipRadius =
+            max (size // 20) 1
+    in
     pipLocations
         |> Array.fromList
         |> Array.get (value - 1)
         |> Maybe.withDefault []
-        |> List.map dieCoordinates
-        |> List.map pip
+        |> List.map (dieCoordinates size)
+        |> List.map (pip pipRadius)
