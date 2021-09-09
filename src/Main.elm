@@ -154,25 +154,28 @@ view model =
             [ Html.text ("Score:" ++ String.fromInt (model.score1 + model.score2))
             , Html.text ("Rerolls: " ++ String.fromInt model.rerolls)
             ]
-        , viewDiceSection model.firstGroup model.phase One
-        , viewDiceSection model.secondGroup model.phase Two
+        , viewDiceSection model.firstGroup model.phase One model.rerolls
+        , viewDiceSection model.secondGroup model.phase Two model.rerolls
         ]
 
 
-viewDiceSection : List Die.Die -> Phase -> Phase -> Html.Html Msg
-viewDiceSection dice modelPhase workingPhase =
+viewDiceSection : List Die.Die -> Phase -> Phase -> Int -> Html.Html Msg
+viewDiceSection dice modelPhase workingPhase rerolls =
     div []
         (List.append
-            (List.map Die.toSvg dice)
+            (List.map (Die.toSvg 80) dice)
             [ br [] []
             , button
                 [ onClick (rollOrReroll dice)
-                , A.disabled (mismatch modelPhase workingPhase)
+                , A.disabled
+                    ((modelPhase /= workingPhase)
+                        || (rollOrReroll dice == Reroll && rerolls <= 0)
+                    )
                 ]
                 [ Html.text "Roll" ]
             , button
                 [ onClick Freeze
-                , A.disabled (mismatch modelPhase workingPhase)
+                , A.disabled (modelPhase /= workingPhase)
                 ]
                 [ Html.text "Freeze" ]
             ]
@@ -201,14 +204,19 @@ headDieVal dice =
         |> Die.asInt
 
 
-mismatch : Phase -> Phase -> Bool
-mismatch modelPhase workingPhase =
-    case ( modelPhase, workingPhase ) of
-        ( One, One ) ->
-            False
-
-        ( Two, Two ) ->
-            False
-
-        ( _, _ ) ->
+disabled : Phase -> Phase -> Int -> Bool
+disabled modelPhase workingPhase rerolls =
+    case rerolls of
+        0 ->
             True
+
+        _ ->
+            case ( modelPhase, workingPhase ) of
+                ( One, One ) ->
+                    False
+
+                ( Two, Two ) ->
+                    False
+
+                ( _, _ ) ->
+                    True
