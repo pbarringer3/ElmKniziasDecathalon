@@ -206,21 +206,3 @@ headDieVal dice =
         |> List.head
         |> Maybe.withDefault Die.blank
         |> Die.asInt
-
-
-disabled : Phase -> Phase -> Int -> Bool
-disabled modelPhase workingPhase rerolls =
-    case rerolls of
-        0 ->
-            True
-
-        _ ->
-            case ( modelPhase, workingPhase ) of
-                ( One, One ) ->
-                    False
-
-                ( Two, Two ) ->
-                    False
-
-                ( _, _ ) ->
-                    True
