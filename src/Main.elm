@@ -8,6 +8,7 @@
 module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
 
 -- import Debug exposing (log, toString)
+-- import Game exposing (Game)
 
 import Browser
 import Css exposing (..)
@@ -52,6 +53,7 @@ type alias Model =
 type Phase
     = One
     | Two
+    | GameOver
 
 
 init : () -> ( Model, Cmd Msg )
@@ -75,8 +77,7 @@ type Msg
     = Roll
     | Reroll
     | NewDice (List Die.Die)
-    | FreezeOne
-    | FreezeTwo
+    | Freeze
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -109,15 +110,23 @@ update msg model =
                     , Cmd.none
                     )
 
-        FreezeOne ->
-            ( { model | phase = Two }
-            , Cmd.none
-            )
+                _ ->
+                    ( model, Cmd.none )
 
-        FreezeTwo ->
-            ( { model | phase = Two }
-            , Cmd.none
-            )
+        Freeze ->
+            case model.phase of
+                One ->
+                    ( { model | phase = Two }
+                    , Cmd.none
+                    )
+
+                Two ->
+                    ( { model | phase = GameOver }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 getTotal : List Die.Die -> Int
@@ -162,7 +171,7 @@ viewDiceSection dice modelPhase workingPhase =
                 ]
                 [ Html.text "Roll" ]
             , button
-                [ onClick FreezeOne
+                [ onClick Freeze
                 , A.disabled (mismatch modelPhase workingPhase)
                 ]
                 [ Html.text "Freeze" ]
