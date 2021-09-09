@@ -7,12 +7,14 @@
 
 module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
 
+-- import Debug exposing (log, toString)
+
 import Browser
 import Css exposing (..)
 import Die
 import Html exposing (br, button, div)
+import Html.Attributes as A
 import Html.Events exposing (..)
-import Html.Styled.Attributes exposing (css)
 import List
 import Random
 import Svg exposing (..)
@@ -42,7 +44,8 @@ type alias Model =
     , firstGroup : List Die.Die
     , secondGroup : List Die.Die
     , phase : Phase
-    , score : Int
+    , score1 : Int
+    , score2 : Int
     }
 
 
@@ -57,7 +60,8 @@ init _ =
       , firstGroup = List.repeat 4 Die.blank
       , secondGroup = List.repeat 4 Die.blank
       , phase = One
-      , score = 0
+      , score1 = 0
+      , score2 = 0
       }
     , Cmd.none
     )
@@ -92,13 +96,16 @@ update msg model =
                 One ->
                     ( { model
                         | firstGroup = newDice
-                        , score = getTotal newDice
+                        , score1 = getTotal newDice
                       }
                     , Cmd.none
                     )
 
                 Two ->
-                    ( { model | secondGroup = newDice }
+                    ( { model
+                        | secondGroup = newDice
+                        , score2 = getTotal newDice
+                      }
                     , Cmd.none
                     )
 
@@ -111,6 +118,11 @@ update msg model =
             ( { model | phase = Two }
             , Cmd.none
             )
+
+
+getTotal : List Die.Die -> Int
+getTotal dice =
+    List.sum (List.map Die.asInt dice)
 
 
 
@@ -130,57 +142,64 @@ view : Model -> Html.Html Msg
 view model =
     div []
         [ div []
-            [ Html.text ("Score:" ++ String.fromInt model.score)
+            [ Html.text ("Score:" ++ String.fromInt (model.score1 + model.score2))
             , Html.text ("Rerolls: " ++ String.fromInt model.rerolls)
             ]
-        , div []
-            (List.append
-                (List.map Die.toSvg model.firstGroup)
-                [ br [] []
-                , button [ onClick (rollOrReroll model) ] [ Html.text "Roll" ]
-                , button [ onClick FreezeOne ] [ Html.text "Freeze" ]
-                ]
-            )
-        , div []
-            (List.append
-                (List.map Die.toSvg model.secondGroup)
-                [ br [] []
-                , button [ onClick (rollOrReroll model) ] [ Html.text "Roll" ]
-                , button [ onClick FreezeTwo ] [ Html.text "Freeze" ]
-                ]
-            )
+        , viewDiceSection model.firstGroup model.phase One
+        , viewDiceSection model.secondGroup model.phase Two
         ]
 
 
-getTotal : List Die.Die -> Int
-getTotal dice =
-    List.sum (List.map Die.asInt dice)
+viewDiceSection : List Die.Die -> Phase -> Phase -> Html.Html Msg
+viewDiceSection dice modelPhase workingPhase =
+    div []
+        (List.append
+            (List.map Die.toSvg dice)
+            [ br [] []
+            , button
+                [ onClick (rollOrReroll dice)
+                , A.disabled (mismatch modelPhase workingPhase)
+                ]
+                [ Html.text "Roll" ]
+            , button
+                [ onClick FreezeOne
+                , A.disabled (mismatch modelPhase workingPhase)
+                ]
+                [ Html.text "Freeze" ]
+            ]
+        )
 
 
-rollOrReroll : Model -> Msg
-rollOrReroll model =
+rollOrReroll : List Die.Die -> Msg
+rollOrReroll dice =
     let
-        firstDieVal =
-            model.firstGroup
-                |> List.head
-                |> Maybe.withDefault Die.blank
-                |> Die.asInt
-
-        secondDieVal =
-            model.secondGroup
-                |> List.head
-                |> Maybe.withDefault Die.blank
-                |> Die.asInt
-
-        phase =
-            model.phase
+        val =
+            headDieVal dice
     in
-    case ( phase, firstDieVal, secondDieVal ) of
-        ( One, 0, _ ) ->
+    case val of
+        0 ->
             Roll
 
-        ( Two, _, 0 ) ->
-            Roll
-
-        ( _, _, _ ) ->
+        _ ->
             Reroll
+
+
+headDieVal : List Die.Die -> Int
+headDieVal dice =
+    dice
+        |> List.head
+        |> Maybe.withDefault Die.blank
+        |> Die.asInt
+
+
+mismatch : Phase -> Phase -> Bool
+mismatch modelPhase workingPhase =
+    case ( modelPhase, workingPhase ) of
+        ( One, One ) ->
+            False
+
+        ( Two, Two ) ->
+            False
+
+        ( _, _ ) ->
+            True
