@@ -131,7 +131,11 @@ update msg model =
 
 getTotal : List Die.Die -> Int
 getTotal dice =
-    List.sum (List.map Die.asInt dice)
+    let
+        underSix =
+            List.filter (\n -> n < 6) (List.map Die.asInt dice)
+    in
+    List.sum underSix + (4 - List.length underSix) * -6
 
 
 
