@@ -45,11 +45,16 @@ type Phase
     | GameOver
 
 
+groupLength : Int
+groupLength =
+    4
+
+
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { rerolls = 5
-      , firstGroup = List.repeat 4 Die.blank
-      , secondGroup = List.repeat 4 Die.blank
+      , firstGroup = List.repeat groupLength Die.blank
+      , secondGroup = List.repeat groupLength Die.blank
       , phase = One
       , score1 = 0
       , score2 = 0
@@ -74,7 +79,7 @@ update msg model =
     case msg of
         Roll ->
             ( model
-            , Random.generate NewDice (Random.list (List.length model.firstGroup) Die.rolledDie)
+            , Random.generate NewDice (Random.list groupLength Die.rolledDie)
             )
 
         Reroll ->
@@ -124,7 +129,7 @@ getTotal dice =
         underSix =
             List.filter (\n -> n < 6) (List.map Die.asInt dice)
     in
-    List.sum underSix + (4 - List.length underSix) * -6
+    List.sum underSix + (groupLength - List.length underSix) * -6
 
 
 
