@@ -2,16 +2,35 @@ module HundredMeters exposing (main)
 
 import Browser
 import Die
-import Html exposing (br, button, div)
-import Html.Attributes as A
-import Html.Events exposing (..)
+import Element
+    exposing
+        ( Element
+        , alignLeft
+        , alignRight
+        , column
+        , download
+        , el
+        , fill
+        , layout
+        , padding
+        , paragraph
+        , row
+        , text
+        , textColumn
+        , width
+        )
+import Element.Events as Events
+import Element.Font as Font
+import Element.Input exposing (button)
+import Html
 import List
 import Random
-import Svg exposing (..)
-import Svg.Attributes exposing (..)
+import String exposing (fromInt)
 
 
 
+-- import Svg
+-- import Svg.Attributes
 -- MAIN
 
 
@@ -26,6 +45,10 @@ main =
 
 
 
+-- main : Html.Html Msg
+-- main =
+--     Element.layout []
+--         (view (Tuple.first (init ())))
 -- MODEL
 
 
@@ -36,6 +59,7 @@ type alias Model =
     , phase : Phase
     , score1 : Int
     , score2 : Int
+    , rulesExpanded : Bool
     }
 
 
@@ -58,6 +82,7 @@ init _ =
       , phase = One
       , score1 = 0
       , score2 = 0
+      , rulesExpanded = False
       }
     , Cmd.none
     )
@@ -72,6 +97,7 @@ type Msg
     | Reroll
     | NewDice (List Die.Die)
     | Freeze
+    | ToggleRules
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -122,6 +148,11 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        ToggleRules ->
+            ( { model | rulesExpanded = not model.rulesExpanded }
+            , Cmd.none
+            )
+
 
 getTotal : List Die.Die -> Int
 getTotal dice =
@@ -147,36 +178,139 @@ subscriptions _ =
 
 view : Model -> Html.Html Msg
 view model =
-    div []
-        [ div []
-            [ Html.text ("Score:" ++ String.fromInt (model.score1 + model.score2))
-            , Html.text ("Rerolls: " ++ String.fromInt model.rerolls)
-            ]
-        , viewDiceSection model.firstGroup model.phase One model.rerolls
-        , viewDiceSection model.secondGroup model.phase Two model.rerolls
+    layout []
+        (column [ width fill, alignLeft ]
+            [ viewHeader model.rerolls, viewContent model ]
+        )
+
+
+viewHeader : Int -> Element Msg
+viewHeader rerolls =
+    row [ width fill, padding 10, alignLeft ]
+        [ text ("Rerolls Remaining: " ++ fromInt rerolls)
+        , el [ alignRight, Events.onClick ToggleRules ] (text "Rules")
         ]
 
 
-viewDiceSection : List Die.Die -> Phase -> Phase -> Int -> Html.Html Msg
-viewDiceSection dice modelPhase workingPhase rerolls =
-    div []
-        (List.append
-            (List.map (Die.toSvg 80) dice)
-            [ br [] []
-            , button
-                [ onClick (rollOrReroll dice)
-                , A.disabled
-                    ((modelPhase /= workingPhase)
-                        || (rollOrReroll dice == Reroll && rerolls <= 0)
-                    )
-                ]
-                [ Html.text "Roll" ]
-            , button
-                [ onClick Freeze
-                , A.disabled (modelPhase /= workingPhase)
-                ]
-                [ Html.text "Freeze" ]
+viewContent : Model -> Element Msg
+viewContent model =
+    case model.rulesExpanded of
+        True ->
+            row [] [ viewGame model, viewRules ]
+
+        False ->
+            row [] [ viewGame model ]
+
+
+viewGame : Model -> Element Msg
+viewGame model =
+    column []
+        [ viewPhase model One
+        , viewPhase model Two
+        , el [] (text ("Total: " ++ fromInt (model.score1 + model.score2)))
+        ]
+
+
+viewRules : Element msg
+viewRules =
+    textColumn []
+        [ el
+            [ Font.size 18
+            , Font.bold
             ]
+            (text "100 Metres (8 dice, 1 attempt)")
+        , el [ Font.bold ] (text "Rules:")
+        , paragraph []
+            [ text """Divide the eight dice into two sets of four. 
+            Roll the first four dice. If you are not satisfied 
+            with the result, pick up all four dice and reroll 
+            them. This can be repeated several times until you 
+            freeze the first set. Then roll the other four dice 
+            and proceed in the same manner. Try to freeze sets 
+            of dice with high values but which contain no sixes.""" ]
+        , paragraph []
+            [ text """You have a maximum of seven rolls, one initial 
+            roll for each set and up to five rerolls which may 
+            be divided between the sets as desired.""" ]
+        , el [ Font.bold ] (text "Scoring:")
+        , paragraph []
+            [ text """Total the value of the dice for numbers one to 
+            five, but subtract any sixes from the result.""" ]
+        , paragraph [ Font.italic ]
+            [ text """Rules lightly adapted from """
+            , download []
+                { url = """https://www.knizia.de/wp-content/uploads
+                    /reiner/freebies/Website-Decathlon.pdf"""
+                , label = text "this PDF."
+                }
+            ]
+        ]
+
+
+viewPhase : Model -> Phase -> Element Msg
+viewPhase model phase =
+    let
+        dice =
+            if phase == One then
+                model.firstGroup
+
+            else
+                model.secondGroup
+
+        phaseScore =
+            if phase == One then
+                model.score1
+
+            else
+                model.score2
+
+        matchedPhases =
+            model.phase == phase
+
+        rollType =
+            rollOrReroll dice
+
+        rollEnabled =
+            matchedPhases && (rollType == Roll || model.rerolls > 0)
+
+        freezeEnabled =
+            matchedPhases && (rollType == Reroll)
+    in
+    row []
+        [ viewButtons rollType rollEnabled freezeEnabled
+        , viewDice dice
+        , el [] (text ("Value: " ++ fromInt phaseScore))
+        ]
+
+
+viewButtons : Msg -> Bool -> Bool -> Element Msg
+viewButtons rollType rollEnabled freezeEnabled =
+    let
+        rollButton =
+            if rollEnabled then
+                button [] { onPress = Just rollType, label = text "Roll" }
+
+            else
+                el [] (text "")
+
+        freezeButton =
+            if freezeEnabled then
+                button [] { onPress = Just Freeze, label = text "Freeze" }
+
+            else
+                el [] (text "")
+    in
+    column []
+        [ rollButton
+        , freezeButton
+        ]
+
+
+viewDice dice =
+    row []
+        (dice
+            |> List.map (Die.toSvg 80)
+            |> List.map Element.html
         )
 
 
