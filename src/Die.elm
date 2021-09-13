@@ -8,7 +8,6 @@ module Die exposing
 
 import Array
 import Element exposing (Element)
-import Html
 import Random
 import Svg
 import Svg.Attributes as SA
