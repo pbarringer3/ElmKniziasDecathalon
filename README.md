@@ -1,7 +1,7 @@
-# ElmKniziasDecathalon
+# HundredMeters
 
 ## About
-Reiner Knizia's Decathalon is a series of 10 minigames played with dice. The rules are freely available on the designer's website.
+Reiner Knizia's Decathalon is a series of 10 minigames played with dice. The rules are freely available on the designer's website. This project is starting with the first game and will eventually encompass all ten.
 
 ## Purpose
 The purpose of this project is to give me experience in building an actual project in Elm. The idea was inspired by my work as an instructor at Art of Problem Solving where we use this series of games to help students learn to program in the course Intermediate Programming with Python. 
