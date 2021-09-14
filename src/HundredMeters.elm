@@ -181,15 +181,14 @@ viewHeader rerolls =
 
 viewContent : Model -> Element Msg
 viewContent model =
-    case model.rulesExpanded of
-        True ->
-            row [ width fill ]
-                [ el [ width (fillPortion 7), alignTop ] (viewGame model)
-                , el [ width (fillPortion 3) ] viewRules
-                ]
+    if model.rulesExpanded then
+        row [ width fill ]
+            [ el [ width (fillPortion 7), alignTop ] (viewGame model)
+            , el [ width (fillPortion 3) ] viewRules
+            ]
 
-        False ->
-            row [ width fill ] [ viewGame model ]
+    else
+        row [ width fill ] [ viewGame model ]
 
 
 viewGame : Model -> Element Msg
