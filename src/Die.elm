@@ -14,8 +14,9 @@ import Svg.Attributes as SA
 
 
 
--- Represents a D6. The Int is the value of the face.
--- A value of 0 represents an unrolled (blank) Die.
+{- Represents a D6. The Int is the value of the face.
+   A value of 0 represents an unrolled (blank) Die.
+-}
 
 
 type Die
@@ -41,7 +42,7 @@ rolledDie =
 
 toSvgElement : Int -> Die -> Element msg
 toSvgElement size die =
-    -- Will not allow dice size to be less than 20 pixels (24 with margin)
+    -- Will not allow dice size to be less than 20 pixels
     let
         boundedSize =
             max size 20
@@ -92,8 +93,11 @@ dieCoordinates size location =
     let
         quarter =
             size // 4
+
+        toPixel =
+            \coordinate -> quarter * (coordinate + 1)
     in
-    ( quarter * (Tuple.first location + 1), quarter * (Tuple.second location + 1) )
+    Tuple.mapBoth toPixel toPixel location
 
 
 pip : Int -> ( Int, Int ) -> Svg.Svg msg
