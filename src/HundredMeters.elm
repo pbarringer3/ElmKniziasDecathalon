@@ -28,10 +28,6 @@ main =
 
 
 
--- main : Html.Html Msg
--- main =
---     Element.layout []
---         (view (Tuple.first (init ())))
 -- MODEL
 
 
