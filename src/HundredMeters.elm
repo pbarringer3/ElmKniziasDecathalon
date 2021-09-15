@@ -14,8 +14,6 @@ import String exposing (fromInt)
 
 
 
--- import Svg
--- import Svg.Attributes
 -- MAIN
 
 
